@@ -18,6 +18,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import org.springframework.beans.factory.annotation.Value;
+
 import java.util.List;
 
 @Configuration
@@ -27,6 +29,11 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
+
+    // URL do frontend (Vercel em prod, localhost em dev)
+    // Configure no Railway: FRONTEND_URL=https://seu-app.vercel.app
+    @Value("${FRONTEND_URL:http://localhost:3000}")
+    private String frontendUrl;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -61,9 +68,29 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:3001"));
+
+        // Origens permitidas: Vercel (prod) + localhost (dev)
+        config.setAllowedOrigins(List.of(
+                frontendUrl,
+                "http://localhost:3000",
+                "http://localhost:3001"
+        ));
+
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
+
+        // Wildcard "*" não pode ser usado com allowCredentials=true;
+        // os headers devem ser listados explicitamente
+        config.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "Origin",
+                "X-Requested-With"
+        ));
+
+        // Expõe o header Authorization para que o frontend consiga lê-lo
+        config.setExposedHeaders(List.of("Authorization"));
+
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 
