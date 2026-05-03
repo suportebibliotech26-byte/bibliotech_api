@@ -3,6 +3,7 @@ package com.impacta.biblioteca.service;
 import com.impacta.biblioteca.model.Funcionario;
 import com.impacta.biblioteca.repository.FuncionarioRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.Optional;
 public class FuncionarioService {
 
     private final FuncionarioRepository funcionarioRepository;
+    private final PasswordEncoder passwordEncoder;
 
     // ─── Listar todos os funcionários ────────────────────────────
 
@@ -40,6 +42,10 @@ public class FuncionarioService {
         }
 
         funcionario.setId(null); // Garante que será um novo registro
+        // Criptografa a senha se fornecida em texto plano
+        if (funcionario.getSenha() != null && !funcionario.getSenha().startsWith("$2a$")) {
+            funcionario.setSenha(passwordEncoder.encode(funcionario.getSenha()));
+        }
         return funcionarioRepository.save(funcionario);
     }
 
@@ -61,11 +67,22 @@ public class FuncionarioService {
                         throw new IllegalArgumentException("Já existe um funcionário com este nome de usuário (username).");
                     }
 
+                    funcionarioExistente.setNome(funcionarioAtualizado.getNome());
                     funcionarioExistente.setEmail(funcionarioAtualizado.getEmail());
                     funcionarioExistente.setCpf(funcionarioAtualizado.getCpf());
                     funcionarioExistente.setUsername(funcionarioAtualizado.getUsername());
-                    funcionarioExistente.setPassword(funcionarioAtualizado.getPassword());
-                    funcionarioExistente.setCargo(funcionarioAtualizado.getCargo());
+                    funcionarioExistente.setAtivo(funcionarioAtualizado.getAtivo());
+                    funcionarioExistente.setPerfil(funcionarioAtualizado.getPerfil());
+
+                    // Atualiza senha apenas se fornecida
+                    if (funcionarioAtualizado.getSenha() != null && !funcionarioAtualizado.getSenha().isBlank()) {
+                        if (!funcionarioAtualizado.getSenha().startsWith("$2a$")) {
+                            funcionarioExistente.setSenha(passwordEncoder.encode(funcionarioAtualizado.getSenha()));
+                        } else {
+                            funcionarioExistente.setSenha(funcionarioAtualizado.getSenha());
+                        }
+                    }
+
                     return funcionarioRepository.save(funcionarioExistente);
                 });
     }
