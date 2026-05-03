@@ -55,6 +55,7 @@ public class Funcionario implements UserDetails {
     }
 
     @JsonIgnore
+    @Transient
     @Override
     public String getPassword() {
         return senha;
