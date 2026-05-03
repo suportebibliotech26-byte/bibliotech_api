@@ -1,5 +1,6 @@
 package com.impacta.biblioteca.security;
 
+import com.impacta.biblioteca.model.Funcionario;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -41,11 +42,18 @@ public class JwtService {
     }
 
     // ─── Gerar token genérico ───────────────────────────────────
+    // Usa o EMAIL como subject do JWT (não o username),
+    // pois o filtro busca por email no banco de dados.
 
     public String gerarToken(Map<String, Object> claimsExtras, UserDetails userDetails, long tempoExpiracao) {
+        // Extrai o email do Funcionario para usar como subject do token
+        String subject = (userDetails instanceof Funcionario)
+                ? ((Funcionario) userDetails).getEmail()
+                : userDetails.getUsername();
+
         return Jwts.builder()
                 .claims(claimsExtras)
-                .subject(userDetails.getUsername())
+                .subject(subject)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + tempoExpiracao))
                 .signWith(getChave())
@@ -67,8 +75,12 @@ public class JwtService {
     // ─── Verificar se o token é válido ──────────────────────────
 
     public boolean tokenValido(String token, UserDetails userDetails) {
-        final String email = extrairEmail(token);
-        return email.equals(userDetails.getUsername()) && !tokenExpirado(token);
+        final String emailDoToken = extrairEmail(token);
+        // Compara com o email do Funcionario (não com getUsername() que retorna o campo 'username')
+        String emailDoUsuario = (userDetails instanceof Funcionario)
+                ? ((Funcionario) userDetails).getEmail()
+                : userDetails.getUsername();
+        return emailDoToken.equals(emailDoUsuario) && !tokenExpirado(token);
     }
 
     // ─── Verificar se o token de redefinição é válido ───────────
