@@ -17,7 +17,7 @@ public class AdminInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // Se não há nenhum funcionário no banco, cria o admin padrão
+        // Se não ha nenhum funcionário no banco, cria o admin padrãp
         if (funcionarioRepository.count() == 0) {
             Funcionario admin = new Funcionario();
             admin.setNome("Administrador");
